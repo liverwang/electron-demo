@@ -22,6 +22,9 @@
     <button onclick="GetData()">获取一条数据</button>
     <button onclick="GetLikeData()">模糊查找多条数据</button>
     <button onclick="GetPageData()">分页查找数据</button>
+    <button onclick="AddData()">插入数据</button>
+    <button onclick="UpdateData()">更新数据</button>
+    <button onclick="DeleteData()">删除数据</button>
   </div>
   <div id="data_list">
   </div>
@@ -29,27 +32,10 @@
 <script src="https://cdn.bootcss.com/sql.js/0.5.0/js/sql.js"></script>
 <script src="./js/sqlite.util.js"></script>
 <script>
-
   const sqlUtil = new SqlUtil({
     database: './sqlite', // 数据库文件
     init: (db) => {
-      sql = 'SELECT * FROM t_account where name=:name'
-      params = { ':name': '用户11' }
-      sqlUtil.SelectOne(db, sql, params, (data) => {
-        console.group()
-        console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
-        console.log(data)
-        console.groupEnd()
-      })
-
-      sql = 'SELECT * FROM t_account where name=:name and account != :account'
-      params = { ':name': '用户11', ':account': 'admin' }
-      sqlUtil.SelectOne(db, sql, params, (data) => {
-        console.group()
-        console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
-        console.log(data)
-        console.groupEnd()
-      })
+      // console.log(sqlUtil)
     }
   })
 
@@ -86,6 +72,30 @@
       console.log(data)
       console.groupEnd()
       ShowDatas(data.data)
+    })
+  }
+
+  function AddData(){
+    const sql = "INSERT INTO t_account(name, account, password) VALUES (?,?,?)"
+    const params = ['aa','aa','aa'] 
+    sqlUtil.Excute(sqlUtil.db, sql, params, ()=>{
+      GetPageData()
+    })
+  }
+
+  function UpdateData(){
+    const sql = "UPDATE t_account set account=:account where id = :id"
+    const params = {':account': 'new account', ':id': 9}
+    sqlUtil.Excute(sqlUtil.db, sql, params, ()=>{
+      GetPageData()
+    })
+  }
+
+  function DeleteData(){
+    const sql = "DELETE FROM t_account WHERE id = :id"
+    const params = {':id': 9}
+    sqlUtil.Excute(sqlUtil.db, sql, params, ()=>{
+      GetPageData()
     })
   }
 

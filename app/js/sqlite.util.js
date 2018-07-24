@@ -1,30 +1,41 @@
 const SqlUtil = (function() {
+  const fs = require('fs')
+  const path = require('path')
+
   var that
   var obj = function(options) {
     that = this
     that.options = options || {}
-
     if (!that.options.database) {
       console.log('请指定数据库文件地址')
       return
     }
+    that.options.dbFile = path.resolve(__dirname, that.options.database)
 
     loadDatabase()
   }
 
   // 加载数据库文件
   function loadDatabase() {
-    var xhr = new XMLHttpRequest()
-    xhr.open('GET', that.options.database, true)
-    xhr.responseType = 'arraybuffer'
-
-    xhr.onload = function(e) {
-      var uInt8Array = new Uint8Array(this.response)
-      that.db = new SQL.Database(uInt8Array)
-      // 数据库加载完毕后调用init方法
+    // node 环境下使用fs读取文件流加载数据
+    if (fs) {
+      const filebuffer = fs.readFileSync(that.options.dbFile)
+      that.db = new SQL.Database(filebuffer)
       that.options.init && that.options.init(that.db)
+    } else {
+      // web模式下使用http请求形式加载数据库，此时只能读取数据
+      var xhr = new XMLHttpRequest()
+      xhr.open('GET', that.options.database, true)
+      xhr.responseType = 'arraybuffer'
+
+      xhr.onload = function(e) {
+        var uInt8Array = new Uint8Array(this.response)
+        that.db = new SQL.Database(uInt8Array)
+        // 数据库加载完毕后调用init方法
+        that.options.init && that.options.init(that.db)
+      }
+      xhr.send()
     }
-    xhr.send()
   }
 
   /**
@@ -80,14 +91,16 @@ const SqlUtil = (function() {
     stmtCount.free()
 
     // 准备分页数据SQL
-    const rowSql = `sql LIMIT :pageIndex OFFSET :pageSize`
-    const stmtRow = db.prepare(sql)
+    const rowSql = `${sql} LIMIT :limit OFFSET :offset`
+    const stmtRow = db.prepare(rowSql)
     if (params.pageIndex === undefined || params.pageIndex === null) {
       params.pageIndex = 0
     }
     if (params.pageSize === undefined || params.pageSize == null) {
       params.pageSize = 10
     }
+    params[':limit'] = params.pageSize
+    params[':offset'] = params.pageIndex * params.pageSize
     stmtRow.bind(params)
 
     let results = []
@@ -105,14 +118,20 @@ const SqlUtil = (function() {
       })
   }
 
-  function update(db, sql, params, callback) {
-    db.run(sql, params)
+  function excute(db, sql, params, callback) {
+    db.run(sql, params, err => {
+      console.log('run success')
+    })
+    const data = db.export()
+    const buffer = new Buffer(data)
+    fs.writeFileSync(that.options.dbFile, buffer)
     callback && callback(true)
   }
 
   obj.prototype.SelectOne = selectOneBySql
   obj.prototype.Select = selectBySql
   obj.prototype.SelectPage = selectByPage
+  obj.prototype.Excute = excute
 
   return obj
 })()
