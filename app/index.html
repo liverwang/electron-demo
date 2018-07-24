@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Sqlite</title>
+  <style>
+    table {
+      border: solid 1px #ccc;
+      border-collapse: collapse;
+      width: 80%;
+      margin: 20px auto;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <button onclick="GetData()">获取一条数据</button>
+    <button onclick="GetLikeData()">模糊查找多条数据</button>
+    <button onclick="GetPageData()">分页查找数据</button>
+  </div>
+  <div id="data_list">
+  </div>
+</body>
+<script src="https://cdn.bootcss.com/sql.js/0.5.0/js/sql.js"></script>
+<script src="./js/sqlite.util.js"></script>
+<script>
+
+  const sqlUtil = new SqlUtil({
+    database: './sqlite', // 数据库文件
+    init: (db) => {
+      sql = 'SELECT * FROM t_account where name=:name'
+      params = { ':name': '用户11' }
+      sqlUtil.SelectOne(db, sql, params, (data) => {
+        console.group()
+        console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
+        console.log(data)
+        console.groupEnd()
+      })
+
+      sql = 'SELECT * FROM t_account where name=:name and account != :account'
+      params = { ':name': '用户11', ':account': 'admin' }
+      sqlUtil.SelectOne(db, sql, params, (data) => {
+        console.group()
+        console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
+        console.log(data)
+        console.groupEnd()
+      })
+    }
+  })
+
+  function GetData() {
+    const sql = 'SELECT * FROM t_account'
+    const params = {}
+    sqlUtil.SelectOne(sqlUtil.db, sql, params, (data) => {
+      console.group()
+      console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
+      console.log(data)
+      console.groupEnd()
+      ShowDatas([data])
+    })
+  }
+
+  function GetLikeData() {
+    const sql = 'SELECT * FROM t_account where name like :name'
+    const params = { ':name': '%用户11%' }
+    sqlUtil.Select(sqlUtil.db, sql, params, (data) => {
+      console.group()
+      console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
+      console.log(data)
+      console.groupEnd()
+      ShowDatas(data)
+    })
+  }
+
+  function GetPageData() {
+    const sql = 'SELECT * FROM t_account where name like :name'
+    const params = { ':name': '%用户%', pageIndex: 1, pageSize: 5 }
+    sqlUtil.SelectPage(sqlUtil.db, sql, params, (data) => {
+      console.group()
+      console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
+      console.log(data)
+      console.groupEnd()
+      ShowDatas(data.data)
+    })
+  }
+
+  function ShowDatas(data) {
+    const bodyHtml = data.map((user) => {
+      return `<tr><td>${user.id}</td><td>${user.name}</td><td>${user.account}</td><td>${user.password}</td>`
+    }).join(' ')
+    document.getElementById("data_list").innerHTML = `<table border="1"><tr><th>序号</th><th>姓名</th><th>账号</th><th>密码</th></tr>${bodyHtml}</table>`
+  }
+</script>
+
+</html>
