@@ -45,11 +45,11 @@ const SqlUtil = (function() {
    * @param {*} params
    * @param {*} callback
    */
-  function selectOneBySql(db, sql, params, callback) {
-    var stmt = db.prepare(sql)
-    var result = stmt.getAsObject(params || {})
-    stmt.free()
-    callback && callback(result)
+  function selectOneBySql(db, sql, params) {
+      var stmt = db.prepare(sql)
+      var result = stmt.getAsObject(params || {})
+      stmt.free()
+      return Promise.resolve(result) 
   }
 
   /**
@@ -59,7 +59,7 @@ const SqlUtil = (function() {
    * @param {*} params
    * @param {*} callback
    */
-  function selectBySql(db, sql, params, callback) {
+  function selectBySql(db, sql, params) {
     // 准备查询SQL
     var stmt = db.prepare(sql)
     // 准备查询参数
@@ -71,7 +71,7 @@ const SqlUtil = (function() {
     }
     // 释放内存
     stmt.free()
-    callback && callback(results)
+    return Promise.resolve(results)
   }
 
   /**
@@ -81,7 +81,7 @@ const SqlUtil = (function() {
    * @param {*} params
    * @param {*} callback
    */
-  function selectByPage(db, sql, params, callback) {
+  function selectByPage(db, sql, params) {
     // 截取from后面的主体SQL
     const mainSql = sql.split('FROM')[1]
     const countSql = `SELECT COUNT(*) as count FROM ${mainSql}`
@@ -109,29 +109,34 @@ const SqlUtil = (function() {
     }
     // 释放内存
     stmtRow.free()
-    callback &&
-      callback({
-        count: count.count,
-        data: results,
-        pageIndex: params.pageIndex,
-        pageSize: params.pageSize
-      })
+    return Promise.resolve({
+      count: count.count,
+      data: results,
+      pageIndex: params.pageIndex,
+      pageSize: params.pageSize
+    })
   }
 
-  function excute(db, sql, params, callback) {
+  function excute(db, sql, params) {
     db.run(sql, params, err => {
       console.log('run success')
     })
     const data = db.export()
     const buffer = new Buffer(data)
     fs.writeFileSync(that.options.dbFile, buffer)
-    callback && callback(true)
+    return Promise.resolve(true)
+  }
+
+  function importDB(file){
+    fs.writeFileSync(that.options.dbFile, fs.readFileSync(file.path))
+    return Promise.resolve(true)
   }
 
   obj.prototype.SelectOne = selectOneBySql
   obj.prototype.Select = selectBySql
   obj.prototype.SelectPage = selectByPage
   obj.prototype.Excute = excute
+  obj.prototype.ImportDB = importDB
 
   return obj
 })()

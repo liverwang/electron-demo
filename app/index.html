@@ -25,15 +25,22 @@
     <button onclick="AddData()">插入数据</button>
     <button onclick="UpdateData()">更新数据</button>
     <button onclick="DeleteData()">删除数据</button>
+    <button>
+      <a href="./sqlite" download="database.sqlite">导出数据库</a>
+    </button>
+    <button onclick="ImportData()">导入数据</button>
   </div>
   <div id="data_list">
+  </div>
+  <div>
+    <input type="file" id="file_input" hidden/>
   </div>
 </body>
 <script src="https://cdn.bootcss.com/sql.js/0.5.0/js/sql.js"></script>
 <script src="./js/sqlite.util.js"></script>
 <script>
   const sqlUtil = new SqlUtil({
-    database: './sqlite', // 数据库文件
+    database: './database.sqlite', // 数据库文件
     init: (db) => {
       // console.log(sqlUtil)
     }
@@ -42,7 +49,7 @@
   function GetData() {
     const sql = 'SELECT * FROM t_account'
     const params = {}
-    sqlUtil.SelectOne(sqlUtil.db, sql, params, (data) => {
+    sqlUtil.SelectOne(sqlUtil.db, sql, params).then((data)=>{
       console.group()
       console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
       console.log(data)
@@ -54,7 +61,7 @@
   function GetLikeData() {
     const sql = 'SELECT * FROM t_account where name like :name'
     const params = { ':name': '%用户11%' }
-    sqlUtil.Select(sqlUtil.db, sql, params, (data) => {
+    sqlUtil.Select(sqlUtil.db, sql, params).then((data) => {
       console.group()
       console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
       console.log(data)
@@ -66,7 +73,7 @@
   function GetPageData() {
     const sql = 'SELECT * FROM t_account where name like :name'
     const params = { ':name': '%用户%', pageIndex: 1, pageSize: 5 }
-    sqlUtil.SelectPage(sqlUtil.db, sql, params, (data) => {
+    sqlUtil.SelectPage(sqlUtil.db, sql, params).then((data) => {
       console.group()
       console.log(`excute sql:${sql}, params: ${JSON.stringify(params)}`)
       console.log(data)
@@ -78,7 +85,7 @@
   function AddData(){
     const sql = "INSERT INTO t_account(name, account, password) VALUES (?,?,?)"
     const params = ['aa','aa','aa'] 
-    sqlUtil.Excute(sqlUtil.db, sql, params, ()=>{
+    sqlUtil.Excute(sqlUtil.db, sql, params).then(()=>{
       GetPageData()
     })
   }
@@ -86,7 +93,7 @@
   function UpdateData(){
     const sql = "UPDATE t_account set account=:account where id = :id"
     const params = {':account': 'new account', ':id': 9}
-    sqlUtil.Excute(sqlUtil.db, sql, params, ()=>{
+    sqlUtil.Excute(sqlUtil.db, sql, params).then(()=>{
       GetPageData()
     })
   }
@@ -94,9 +101,24 @@
   function DeleteData(){
     const sql = "DELETE FROM t_account WHERE id = :id"
     const params = {':id': 9}
-    sqlUtil.Excute(sqlUtil.db, sql, params, ()=>{
+    sqlUtil.Excute(sqlUtil.db, sql, params).then(()=>{
       GetPageData()
     })
+  }
+
+  function ImportData(){
+    const el = document.getElementById("file_input")
+    el.onchange = (event)=>{
+      sqlUtil.ImportDB(el.files[0]).then((data)=>{
+        if(!data) {
+          console.log('导入失败')
+          return
+        }
+
+        location.reload()
+      })
+    }
+    el.click()
   }
 
   function ShowDatas(data) {
